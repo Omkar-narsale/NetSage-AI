@@ -1,6 +1,6 @@
 """
-NetSage AI Streamlit Dashboard Application (Phase 7 Complete Premium UI Redesign).
-AI Network Operations Center (NOC) Bento Grid Dashboard.
+NetSage AI Streamlit Dashboard Application (Phase 7 Premium Sidebar Redesign).
+AI Network Operations Center (NOC) Bento Grid Dashboard & Custom Glass Navigation Rail.
 
 CRITICAL PERFORMANCE RULE: Reads pre-computed stored data only.
 Does NOT make Groq API calls on dashboard load or refresh!
@@ -28,8 +28,14 @@ from ui.theme import load_theme, inject_command_palette_script
 from ui.components import (
     render_top_brand_header,
     render_bento_kpi_card,
-    render_status_badge,
-    render_sidebar_health_panel
+    render_status_badge
+)
+from ui.sidebar import (
+    render_sidebar_branding,
+    render_sidebar_status_card,
+    render_sidebar_navigation,
+    render_sidebar_filters,
+    render_sidebar_callout_and_footer
 )
 from dashboard.metrics import get_dashboard_kpis
 from dashboard.charts import (
@@ -64,40 +70,14 @@ def get_dataset():
 raw_dataset = get_dataset()
 ai_engine = DiagnosisEngine()
 
-# === SIDEBAR NAVIGATION & FILTERS ===
-st.sidebar.markdown("<h2 style='margin-bottom:0; color:#58a6ff;'>⚡ NetSage AI</h2>", unsafe_allow_html=True)
-st.sidebar.caption("AI-Assisted Cisco Network Operations")
-st.sidebar.divider()
+# === PREMIUM SIDEBAR NAVIGATION & FILTERS ===
+render_sidebar_branding()
+render_sidebar_status_card(ai_configured=ai_engine.is_api_key_configured())
+page = render_sidebar_navigation()
+selected_concept, selected_severity, selected_osi, selected_decision, selected_fusion = render_sidebar_filters(raw_dataset)
+render_sidebar_callout_and_footer()
 
-page = st.sidebar.radio(
-    "Navigation",
-    ["Overview", "Case Explorer", "AI vs Human", "Responsible AI", "Evaluation"]
-)
-
-st.sidebar.divider()
-st.sidebar.markdown("<div style='font-weight:700; font-size:0.75rem; color:#8b949e; text-transform:uppercase; letter-spacing:0.8px;'>FILTERS</div>", unsafe_allow_html=True)
-
-# Extract filter options
-all_concepts = ["All"] + sorted(list(set(c.get("concept", "Unknown") for c in raw_dataset.values() if c.get("concept"))))
-all_severities = ["All", "High", "Medium", "Low"]
-all_osi_layers = ["All"] + sorted(list(set(c.get("osi_layer", "Unknown") for c in raw_dataset.values() if c.get("osi_layer"))))
-all_decisions = ["All", "ACCEPT", "EDIT", "REJECT", "PENDING"]
-all_fusion_statuses = ["All", "AGREE", "PARTIAL_AGREE", "CONFLICT", "INSUFFICIENT_EVIDENCE"]
-
-selected_concept = st.sidebar.selectbox("Concept", all_concepts)
-selected_severity = st.sidebar.selectbox("Severity", all_severities)
-selected_osi = st.sidebar.selectbox("OSI Layer", all_osi_layers)
-selected_decision = st.sidebar.selectbox("Review Decision", all_decisions)
-selected_fusion = st.sidebar.selectbox("Agreement Status", all_fusion_statuses)
-
-# Sidebar System Health Panel
-render_sidebar_health_panel(
-    rule_engine_ok=True,
-    ai_engine_ok=ai_engine.is_api_key_configured(),
-    review_sys_ok=True
-)
-
-# Apply Filters
+# Apply Sidebar Filters
 filtered_dataset = {}
 for cid, case in raw_dataset.items():
     if selected_concept != "All" and case.get("concept") != selected_concept:
