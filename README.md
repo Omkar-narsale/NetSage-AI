@@ -32,19 +32,25 @@ NetSage AI focuses on eight core networking categories:
 
 ---
 
-## 🚀 Phase 1: Foundation & Initial Dataset
+## 🚀 Project Status
 
-This repository currently contains **Phase 1** of the NetSage AI project foundation:
-
+### Phase 1 — Networking Foundation & Initial Dataset (Completed)
 * **Comprehensive Troubleshooting Guide** (`docs/networking-fault-guide.md`): Detailed reference guide for all eight fault categories, explaining symptoms, root causes, relevant `show` commands, OSI layer mappings, and step-by-step example scenarios.
-* **Initial Case Dataset** (`data/initial_cases.csv`): 10 validated, realistic Cisco-style troubleshooting scenarios with exact `show`-command evidence, primary expected faults, assigned OSI layers, concept tags, and severity ratings.
+* **Initial Case Dataset** (`data/initial_cases.csv`): Initial 10 validated Cisco-style troubleshooting scenarios.
+
+### Phase 2 — Troubleshooting Dataset Expansion (Completed)
+* **Expanded Dataset** (`data/cases.csv`): 40 total validated Cisco-style troubleshooting cases.
+* **8 Networking Concepts**: Complete coverage across VLAN, Default Gateway, DHCP, DNS, Routing, ACL, NAT, and Wireless.
+* **Cisco-style Evidence**: Detailed `show` command outputs supporting expected faults.
+* **Metadata Tagging**: Explicit OSI layer, concept tag, topology notes, and severity labels (High, Medium, Low).
+* **Dataset Quality Report** (`docs/dataset-quality-report.md`): Statistical summary, coverage mapping, evidence quality standards, and duplicate checks.
 
 ---
 
 ## 🔮 Project Roadmap
 
-* **Phase 1** — Networking foundation and initial cases
-* **Phase 2** — Expand troubleshooting dataset
+* **Phase 1** — Networking foundation and initial cases (Completed)
+* **Phase 2** — Expand troubleshooting dataset (Completed)
 * **Phase 3** — Deterministic Python rule checker
 * **Phase 4** — AI diagnosis engine
 * **Phase 5** — AI + rule checker integration

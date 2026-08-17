@@ -1,0 +1,266 @@
+case_id,symptom,topology_note,show_outputs,expected_fault,osi_layer,concept,severity
+CASE-001,PC-1 in Finance Dept cannot ping Server-1 on Switch-2. Local link is UP.,PC-1 (Fa0/5) -> Switch-1 (Fa0/24) -> Switch-2 (Fa0/10) -> Server-1. Target VLAN is 10.,"Switch-1# show vlan brief
+1 default active Fa0/3, Fa0/4, Fa0/5, Fa0/6
+10 Finance active Fa0/1, Fa0/2
+Switch-1# show interfaces fa0/5 switchport
+Access Mode VLAN: 1 (default)",Access port Fa0/5 on Switch-1 is incorrectly assigned to VLAN 1 instead of VLAN 10.,Layer 2 - Data Link,VLAN,Medium
+CASE-002,PC-A (VLAN 20) on Switch-1 cannot reach PC-B (VLAN 20) on Switch-2 across trunk link.,Switch-1 (Gi0/1) connected to Switch-2 (Gi0/1) via 802.1Q trunk.,"Switch-1# show interfaces trunk
+Port Mode Encapsulation Status Native vlan
+Gi0/1 on 802.1q trunking 1
+Port Vlans allowed on trunk
+Gi0/1 1-10
+Switch-1# show vlan brief
+20 Sales active Fa0/1",VLAN 20 is missing from the allowed VLAN list on inter-switch trunk interface Gig0/1.,Layer 2 - Data Link,VLAN,High
+CASE-003,Host PC-102 (192.168.1.15/24) can ping local LAN hosts but cannot reach remote server 10.0.0.50.,PC-102 (192.168.1.15/24) -> Switch-1 -> Router R1 (Gig0/0/0: 192.168.1.1/24).,"C:\> ipconfig /all
+IPv4 Address: 192.168.1.15
+Subnet Mask: 255.255.255.0
+Default Gateway: 192.168.1.254
+
+R1# show ip interface brief
+Interface IP-Address OK? Method Status Protocol
+GigabitEthernet0/0/0 192.168.1.1 YES manual up up",Host PC-102 has incorrect default gateway IP configured (192.168.1.254 instead of Router R1 IP 192.168.1.1).,Layer 3 - Network,Default Gateway,High
+CASE-004,Newly connected workstations in VLAN 30 receive APIPA IP address (169.254.x.x) and cannot access network.,Workstations in VLAN 30 (172.16.30.0/24) connect to Switch-1. Gateway is Router R1 sub-interface Gig0/0.30. DHCP Server is in VLAN 10 (172.16.10.100).,"R1# show running-config interface GigabitEthernet0/0.30
+interface GigabitEthernet0/0.30
+ encapsulation dot1Q 30
+ ip address 172.16.30.1 255.255.255.0
+!
+Workstation> ipconfig
+Autoconfiguration IPv4 Address: 169.254.112.45",DHCP Relay Agent (ip helper-address 172.16.10.100) is missing on Router sub-interface Gig0/0.30.,Layer 7 - Application,DHCP,High
+CASE-005,User can ping internal server IP 10.1.1.50, but browser fails to load http://app.corp.local with DNS timeout.,Client PC -> Switch -> Router -> Core Services (DNS Server IP: 10.1.1.53).,"C:\> ping 10.1.1.50
+Reply from 10.1.1.50: bytes=32 time=2ms TTL=128
+C:\> nslookup app.corp.local
+DNS request timed out.
+Default Server: UnKnown
+Address: 192.168.1.250
+C:\> ipconfig /all
+DNS Servers: 192.168.1.250",Client PC is configured with an invalid or non-existent DNS server IP (192.168.1.250 instead of 10.1.1.53).,Layer 7 - Application,DNS,Medium
+CASE-006,Branch Router R2 cannot reach HQ subnet 10.10.0.0/16. Traceroute drops at R2.,Branch R2 (192.168.20.0/24) connected to HQ R1 via Serial 0/1/0 (10.0.0.0/30). OSPF routing enabled.,"R2# show ip route
+Codes: C - connected, S - static, O - OSPF
+Gateway of last resort is not set
+C 192.168.20.0/24 is directly connected, GigabitEthernet0/0
+C 10.0.0.0/30 is directly connected, Serial0/1/0
+R2# show ip ospf neighbor
+(blank output)",OSPF neighbor adjacency between R1 and R2 is down due to missing network statement or area mismatch on R2.,Layer 3 - Network,Routing,High
+CASE-007,HR users in subnet 192.168.10.0/24 can ping Payroll Server 10.0.5.20, but HTTP web access (port 80) is denied.,HR Subnet (192.168.10.0/24) -> Router R1 (Gig0/0/1 outbound) -> Payroll Subnet (10.0.5.0/24).,"R1# show access-lists 101
+Extended IP access list 101
+ 10 deny tcp 192.168.10.0 0.0.0.255 host 10.0.5.20 eq www (156 matches)
+ 20 permit ip any any (450 matches)
+R1# show ip interface GigabitEthernet0/0/1
+ Outbound access list is 101",Outbound ACL 101 on interface Gig0/0/1 explicitly denies TCP port 80 (HTTP) traffic from HR subnet to Payroll server.,Layer 4 - Transport,ACL,Medium
+CASE-008,Internal host PC-1 (192.168.1.10) cannot access internet site 203.0.113.50. LAN gateway ping succeeds.,PC-1 (192.168.1.10) -> Router R1 (LAN Gig0/0/0, WAN Gig0/0/1) -> ISP (203.0.113.1). Dynamic NAT overload configured.,"R1# show ip nat translations
+(blank output)
+R1# show ip interface GigabitEthernet0/0/0
+ Interface GigabitEthernet0/0/0 is up, line protocol is up
+ Internet address is 192.168.1.1/24
+ Interface lacks ip nat inside directive
+R1# show ip interface GigabitEthernet0/0/1
+ ip nat outside is enabled",Router R1 LAN interface GigabitEthernet0/0/0 is missing the ip nat inside command, preventing NAT translation.,Layer 3 - Network,NAT,High
+CASE-009,Wireless laptops associate with SSID Guest-WiFi but cannot obtain IP address or access network resources.,Wireless Client -> Lightweight AP-1 -> Switch-1 (Fa0/12) -> Wireless Controller (WLC).,"WLC# show wlan 2
+WLAN Identifier: 2
+Network Name (SSID): Guest-WiFi
+Status: Enabled
+VLAN ID: 99
+
+Switch-1# show vlan brief
+VLAN Name Status Ports
+1 default active Fa0/1..Fa0/10
+10 Internal active Fa0/11
+(Note: VLAN 99 is missing from switch VLAN database)",WLAN 2 (Guest-WiFi) is mapped to VLAN 99, but VLAN 99 has not been created in the Layer 2 switch VLAN database.,Layer 2 - Data Link,Wireless,Medium
+CASE-010,Router R1 cannot forward traffic to external network 172.16.0.0/12. Packets drop with Destination net unreachable.,Router R1 -> Router R2 (10.0.0.2/30 connected on Gig0/0/1) -> External Enterprise Network.,"R1# show ip route
+Gateway of last resort is not set
+C 192.168.1.0/24 is directly connected, GigabitEthernet0/0/0
+C 10.0.0.0/30 is directly connected, GigabitEthernet0/0/1
+S 172.16.0.0/12 [1/0] via 10.0.0.5 [unreachable]",Static route for 172.16.0.0/12 points to an invalid/unreachable next-hop IP address (10.0.0.5 instead of connected next-hop 10.0.0.2).,Layer 3 - Network,Routing,High
+CASE-011,Host PC-3 on Switch-1 cannot communicate with PC-4 in Marketing Dept (VLAN 30); pings fail.,PC-3 (Fa0/8) -> Switch-1 (Fa0/8). Target VLAN is 30 Marketing.,"Switch-1# show vlan brief
+1 default active Fa0/1..Fa0/24
+10 Finance active Fa0/1, Fa0/2
+20 Sales active Fa0/3, Fa0/4
+(Note: VLAN 30 Marketing is missing from switch database)",VLAN 30 has not been created in the Switch-1 VLAN database.,Layer 2 - Data Link,VLAN,Medium
+CASE-012,Inter-switch link between Switch-1 and Switch-2 generates native VLAN mismatch warnings; untagged traffic is misrouted.,Switch-1 (Gi0/1) <-> Switch-2 (Gi0/1) trunk link.,"Switch-1# show interfaces trunk
+Port Mode Encapsulation Status Native vlan
+Gi0/1 on 802.1q trunking 99
+
+Switch-2# show interfaces trunk
+Port Mode Encapsulation Status Native vlan
+Gi0/1 on 802.1q trunking 1",Native VLAN mismatch between Switch-1 (Native VLAN 99) and Switch-2 (Native VLAN 1) on trunk link Gi0/1.,Layer 2 - Data Link,VLAN,Medium
+CASE-013,Devices in VLAN 40 cannot reach Router R1 gateway across Switch-1 uplink interface Gi0/2.,Switch-1 (Gi0/2) -> Router R1 (Gi0/0/0 sub-interfaces dot1Q 40).,"Switch-1# show interfaces gi0/2 switchport
+Administrative Mode: static access
+Operational Mode: static access
+Access Mode VLAN: 1 (default)
+Trunking Native VLAN: 1",Switch-1 interface Gi0/2 connected to Router R1 is configured in static access mode instead of 802.1Q trunk mode.,Layer 2 - Data Link,VLAN,High
+CASE-014,Host PC-201 (10.0.10.15/24) can ping local LAN hosts but cannot reach any remote IP subnet.,PC-201 (10.0.10.15/24) -> SW-1 -> Router R1 (Gi0/0/0: 10.0.10.1/24).,"C:\> ipconfig /all
+IPv4 Address: 10.0.10.15
+Subnet Mask: 255.255.255.0
+Default Gateway: 0.0.0.0",Host PC-201 is missing a configured default gateway IP address.,Layer 3 - Network,Default Gateway,High
+CASE-015,All hosts in VLAN 10 (192.168.10.0/24) experience total gateway loss; pings to gateway 192.168.10.1 time out.,VLAN 10 PCs -> Switch SW1 -> Router R1 (Gi0/0/0.10 gateway).,"R1# show ip interface brief
+Interface IP-Address OK? Method Status Protocol
+GigabitEthernet0/0/0.10 192.168.10.1 YES manual administratively down down",Router R1 gateway sub-interface GigabitEthernet0/0/0.10 is administratively down.,Layer 3 - Network,Default Gateway,High
+CASE-016,Host PC-5 (172.16.5.50/24) cannot ping default gateway router interface 172.16.5.1/24 despite physical link UP.,PC-5 (172.16.5.50/24) -> Switch-1 -> Router R1 (Gi0/0/1).,"C:\> ipconfig /all
+IPv4 Address: 172.16.5.50
+Subnet Mask: 255.255.255.0
+Default Gateway: 172.16.5.1
+
+R1# show ip interface GigabitEthernet0/0/1
+GigabitEthernet0/0/1 is up, line protocol is up
+Internet address is 172.16.50.1/24",Router gateway interface Gi0/0/1 is misconfigured with IP 172.16.50.1/24 instead of 172.16.5.1/24 placing gateway in a different subnet.,Layer 3 - Network,Default Gateway,High
+CASE-017,Switch Virtual Interface Vlan20 is unreachable by local hosts; inter-VLAN routing on Layer 3 Switch SW1 fails.,Host PC-20 (VLAN 20) -> Layer 3 Switch SW1 (Interface Vlan20).,"SW1# show ip interface brief
+Interface IP-Address OK? Method Status Protocol
+Vlan20 10.20.0.1 YES manual down down",Switch Virtual Interface Vlan20 is down/down because no active switch ports are currently assigned to VLAN 20.,Layer 3 - Network,Default Gateway,Medium
+CASE-018,New clients connecting to office network fail to receive an IP address and fall back to APIPA (169.254.x.x).,Workstations -> SW1 -> Router R1 (local Cisco IOS DHCP server).,"R1# show ip dhcp pool LAN_POOL
+Pool LAN_POOL :
+ Utilization mark (High/Low)    : 100 / 0
+ Subnet size (Current/Total)    : 254 / 254
+ Total addresses                : 254
+ Leased addresses               : 254
+ Pending addresses              : 0",Cisco IOS DHCP pool LAN_POOL is completely exhausted with 0 available leases remaining.,Layer 7 - Application,DHCP,High
+CASE-019,Host PC-8 receives APIPA IP 169.254.88.19. Centralized DHCP service on router R1 appears completely unresponsive.,PC-8 -> SW1 -> Router R1 (DHCP Server).,"R1# show running-config | include dhcp
+no service dhcp
+ip dhcp pool OFFICE_POOL
+ network 192.168.50.0 255.255.255.0",DHCP service is globally disabled on Router R1 via the no service dhcp command.,Layer 7 - Application,DHCP,High
+CASE-020,Client PC-12 receives IP 192.168.1.100 via DHCP but cannot ping its default gateway or external networks.,Client PC-12 -> Switch-1 -> Router R1 (Gateway 192.168.1.1).,"C:\> ipconfig /all
+IPv4 Address: 192.168.1.100
+Subnet Mask: 255.255.255.0
+Default Gateway: 192.168.1.100
+
+R1# show ip dhcp pool MAIN_POOL
+ default-router 192.168.1.100",DHCP pool MAIN_POOL has default-router option misconfigured with client IP 192.168.1.100 instead of router gateway IP 192.168.1.1.,Layer 7 - Application,DHCP,Medium
+CASE-021,Host PC-15 obtains IP 192.168.1.5 via DHCP but immediately triggers an IP address conflict warning on the LAN.,PC-15 (DHCP) and Printer-1 (Static IP 192.168.1.5) on local LAN.,"R1# show ip dhcp conflict
+IP address Detection method Detection time
+192.168.1.5 Ping 08:30:15 UTC
+
+R1# show running-config | include ip dhcp excluded-address
+(blank output)",Static IP 192.168.1.5 used by printer was not added to ip dhcp excluded-address on Router R1 causing DHCP to assign duplicate IP.,Layer 7 - Application,DHCP,Medium
+CASE-022,Router R1 cannot resolve domain names (e.g. ping web.corp.local fails) but direct IP pings to 10.5.5.10 succeed.,Router R1 -> DNS Server (10.5.5.10).,"R1# ping 10.5.5.10
+Type escape sequence to abort.
+Sending 5, 100-byte ICMP Echos to 10.5.5.10, timeout is 2 seconds:
+!!!!!
+R1# ping web.corp.local
+Translating ""web.corp.local""...domain server (255.255.255.255)
+% Unrecognized host or address, or protocol not running.
+
+R1# show running-config | include name-server
+(blank output)",Router R1 is missing the global configuration command ip name-server 10.5.5.10.,Layer 7 - Application,DNS,Low
+CASE-023,Client PC can reach external sites by IP address (http://93.184.216.34) but hostname lookups to example.com fail.,Client PC -> SW1 -> Router R1 -> Internet DNS Server (8.8.8.8).,"C:\> nslookup example.com 8.8.8.8
+DNS request timed out. timeout was 2 seconds.
+
+R1# show access-lists 102
+Extended IP access list 102
+ 10 deny udp any any eq domain
+ 20 permit ip any any",Outbound ACL 102 on Router R1 blocks UDP port 53 (DNS) traffic to external DNS servers.,Layer 7 - Application,DNS,High
+CASE-024,Workstation queries internal.company.local and receives wrong IP 10.0.0.99 instead of server IP 10.0.0.10.,Client PC -> Internal DNS Server (10.0.0.5) -> Application Server (10.0.0.10).,"C:\> nslookup internal.company.local
+Server: dns.company.local
+Address: 10.0.0.5
+Name: internal.company.local
+Address: 10.0.0.99
+
+C:\> ping 10.0.0.10
+Reply from 10.0.0.10: bytes=32 time=1ms TTL=128",DNS server contains an incorrect stale A-record mapping internal.company.local to 10.0.0.99 instead of 10.0.0.10.,Layer 7 - Application,DNS,Medium
+CASE-025,Cisco IOS router CLI freezes for 30 seconds when mistyping commands (e.g. pign 10.1.1.1) attempting domain resolution.,Administrator CLI session on Router R1.,"R1# pign 10.1.1.1
+Translating ""pign""...domain server (255.255.255.255)
+(Host lookup times out after 30s)
+
+R1# show running-config | include domain-lookup
+(blank output)",no ip domain-lookup is not configured on Router R1 causing CLI syntax typos to trigger broadcast DNS resolution queries.,Layer 7 - Application,DNS,Low
+CASE-026,Branch office router R2 (192.168.20.0/24) can reach R1 but LAN hosts cannot ping HQ server subnet 10.50.0.0/16.,R2 LAN (192.168.20.0/24) -> R2 -> WAN -> R1 -> HQ LAN (10.50.0.0/16).,"R2# show ip route
+Codes: C - connected, S - static, O - OSPF
+Gateway of last resort is not set
+C 192.168.20.0/24 is directly connected, GigabitEthernet0/0
+C 172.16.1.0/30 is directly connected, Serial0/1/0
+
+R2# show running-config | include ip route
+(blank output)",Router R2 is missing a static route or dynamic routing rule for destination subnet 10.50.0.0/16.,Layer 3 - Network,Routing,High
+CASE-027,Packets sent from Host A (192.168.1.10) reach Server B (10.0.0.5) but Server B cannot reply back.,Host A (192.168.1.0/24) -> Router R1 -> Router R2 -> Server B (10.0.0.0/24).,"R1# show ip route 10.0.0.0
+Routing entry for 10.0.0.0/24
+ Known via ""static"", distance 1
+ Routing via 172.16.0.2
+
+R2# show ip route 192.168.1.0
+% Network not in table",Router R2 is missing a return route to source subnet 192.168.1.0/24 causing asymmetric routing drop.,Layer 3 - Network,Routing,High
+CASE-028,OSPF routers R1 and R2 fail to form neighbor adjacency on GigabitEthernet0/0/0 link; state stuck in INIT/ATTEMPT.,R1 (Gi0/0/0: 10.1.1.1/30) <-> R2 (Gi0/0/0: 10.1.1.2/30).,"R1# show ip ospf interface GigabitEthernet0/0/0
+GigabitEthernet0/0/0 is up, line protocol is up
+ Process ID 1, Area 0
+ Hello 10, Dead 40
+
+R2# show ip ospf interface GigabitEthernet0/0/0
+GigabitEthernet0/0/0 is up, line protocol is up
+ Process ID 1, Area 0
+ Hello 30, Dead 120",OSPF Hello/Dead timer mismatch between R1 (10s/40s) and R2 (30s/120s) on interface GigabitEthernet0/0/0.,Layer 3 - Network,Routing,High
+CASE-029,Router R1 cannot reach any external internet subnets (e.g. 8.8.8.8); gateway of last resort is not set.,Router R1 -> ISP Router (203.0.113.1).,"R1# show ip route
+Gateway of last resort is not set
+C 192.168.1.0/24 is directly connected, GigabitEthernet0/0/0
+C 203.0.113.0/30 is directly connected, GigabitEthernet0/0/1
+
+R1# show running-config | include ip route
+(blank output)",Router R1 is missing a default static route (ip route 0.0.0.0 0.0.0.0 GigabitEthernet0/0/1).,Layer 3 - Network,Routing,High
+CASE-030,OSPF route for LAN subnet 192.168.100.0/24 is not advertised from R1 to neighboring router R2.,R1 LAN (192.168.100.0/24) -> R1 -> R2.,"R1# show ip protocols
+Routing Protocol is ""ospf 1""
+ Routing for Networks:
+ 10.0.0.0 0.0.0.3 area 0
+ Passive Interfaces:
+ GigabitEthernet0/0/0",OSPF router process on R1 is missing network 192.168.100.0 0.0.0.255 area 0 configuration.,Layer 3 - Network,Routing,Medium
+CASE-031,Secure SSH access (TCP port 22) from Admin PC (192.168.1.50) to Core Switch (10.0.0.2) fails with connection refused.,Admin PC (192.168.1.50) -> Switch VTY lines (10.0.0.2).,"SW1# show running-config | section line vty
+line vty 0 4
+ access-class 15 in
+ login local
+ transport input ssh
+
+SW1# show access-lists 15
+Standard IP access list 15
+ 10 permit 192.168.1.100",VTY line access-class 15 permits only Admin PC 192.168.1.100 and implicitly denies Admin PC 192.168.1.50.,Layer 4 - Transport,ACL,Medium
+CASE-032,Guest VLAN 50 users (172.16.50.0/24) can reach internal database server 10.1.1.10 violating security isolation policy.,Guest VLAN 50 -> Router R1 (Gi0/0/0.50) -> Internal Server (10.1.1.10).,"R1# show ip interface GigabitEthernet0/0/0.50
+Interface GigabitEthernet0/0/0.50 is up, line protocol is up
+ Inbound access list is not set
+ Outbound access list is not set
+
+R1# show access-lists GUEST_FILTER
+Extended IP access list GUEST_FILTER
+ 10 deny ip 172.16.50.0 0.0.0.255 10.1.0.0 0.0.255.255
+ 20 permit ip any any",ACL GUEST_FILTER was defined in global config but never applied to interface GigabitEthernet0/0/0.50 with ip access-group.,Layer 3 - Network,ACL,High
+CASE-033,All traffic from Finance subnet 192.168.30.0/24 to Server 10.0.0.5 is blocked even though a permit rule exists at line 20.,Finance PC -> Router R1 -> Server 10.0.0.5.,"R1# show access-lists 105
+Extended IP access list 105
+ 10 deny ip 192.168.30.0 0.0.0.255 any (245 matches)
+ 20 permit tcp 192.168.30.0 0.0.0.255 host 10.0.0.5 eq www (0 matches)",ACL 105 contains a broad deny ip rule at line 10 preceding the specific permit tcp rule at line 20 causing all traffic to match line 10 first.,Layer 3 - Network,ACL,High
+CASE-034,Ping from PC-A (192.168.1.10) to Web Server (10.0.0.20) succeeds but HTTPS (TCP port 443) connection fails.,PC-A -> Router R1 (Gi0/0/1 inbound ACL 110) -> Web Server (10.0.0.20).,"R1# show access-lists 110
+Extended IP access list 110
+ 10 permit icmp any any
+ 20 permit tcp any host 10.0.0.20 eq www
+(Note: Implicit deny ip any any active at end of list)",Extended ACL 110 permits ICMP and HTTP (port 80) but lacks a rule permitting HTTPS (TCP port 443) hitting the implicit deny.,Layer 4 - Transport,ACL,Medium
+CASE-035,External internet users cannot access internal web server at public IP 203.0.113.10; gateway ping succeeds.,External User -> ISP Router -> Router R1 (WAN: 203.0.113.1) -> Web Server (Internal: 192.168.1.50).,"R1# show ip nat translations
+(blank output)
+
+R1# show running-config | include ip nat
+ip nat inside source list 1 interface GigabitEthernet0/0/1 overload",Router R1 is missing static NAT mapping (ip nat inside source static 192.168.1.50 203.0.113.10) for the internal web server.,Layer 3 - Network,NAT,High
+CASE-036,Hosts in new VLAN 20 (192.168.20.0/24) cannot reach external internet while hosts in VLAN 10 work fine.,VLAN 10 & VLAN 20 -> Router R1 (NAT Overload) -> ISP.,"R1# show running-config | include ip nat
+ip nat inside source list 1 interface GigabitEthernet0/0/1 overload
+
+R1# show access-lists 1
+Standard IP access list 1
+ 10 permit 192.168.10.0 0.0.0.255",NAT Access List 1 permits only VLAN 10 (192.168.10.0/24) and excludes VLAN 20 (192.168.20.0/24).,Layer 3 - Network,NAT,High
+CASE-037,Internal hosts experience intermittent internet dropouts; new outbound NAT connections fail while pool is exhausted.,500 Internal LAN hosts -> Router R1 -> Dynamic NAT Pool (203.0.113.10 to 203.0.113.12).,"R1# show ip nat statistics
+Total active translations: 3
+Outside interfaces: GigabitEthernet0/0/1
+Inside interfaces: GigabitEthernet0/0/0
+Hits: 15420  Misses: 450
+Pool PUBLIC_POOL : netmask 255.255.255.252
+ start 203.0.113.10 end 203.0.113.12
+ type generic, total addresses 3, allocated 3 (100%)",Dynamic NAT pool PUBLIC_POOL is 100% allocated (exhausted) because overload keyword was omitted from NAT configuration.,Layer 3 - Network,NAT,High
+CASE-038,Wireless clients connecting to SSID Corporate-Secure keep prompting for password and fail 802.1X/WPA2 authentication.,Laptop -> AP-1 -> WLC (10.0.0.5) -> RADIUS Server (10.0.0.50).,"WLC# show radius summary
+Server Account State Radius-IP Port Secret
+1 10.0.0.50 Enabled 1812 WrongSecretKey123
+
+RADIUS Server# show running-config
+radius-server host 10.0.0.5 key CorrectSecretKey456",RADIUS shared secret mismatch between Wireless LAN Controller (WLC) and RADIUS authentication server.,Layer 2 - Data Link,Wireless,High
+CASE-039,Lightweight Access Point AP-2 remains in Downloading/Searching state and fails to join Wireless LAN Controller (WLC).,AP-2 (192.168.50.20) -> Switch SW1 -> WLC (10.0.0.5).,"AP-2# show capwap client status
+Starting CAPWAP discovery...
+CAPWAP State: Discovery
+Unable to resolve WLC hostname 'cisco-capwap-controller'
+
+AP-2# show ip interface brief
+Interface IP-Address OK? Method Status Protocol
+GigabitEthernet0 192.168.50.20 YES DHCP up up
+(Note: DHCP Option 43 is missing from DHCP Server scope)",DHCP Option 43 (WLC IP advertisement) is missing from the DHCP pool scope preventing AP-2 from discovering WLC IP address.,Layer 2 - Data Link,Wireless,High
+CASE-040,Wireless clients connected to SSID Staff-WiFi can reach local gateway but cannot access network resources; WLAN disabled.,Wireless Laptops -> Lightweight AP -> WLC.,"WLC# show wlan summary
+Number of WLANs: 2
+WLAN ID WLAN SSID / Profile Name Status Security Policy
+1 Staff-WiFi / Staff_Profile Disabled WPA2-PSK
+2 Guest-WiFi / Guest_Profile Enabled Open",WLAN 1 (Staff-WiFi) is administratively disabled on the Wireless LAN Controller (WLC).,Layer 2 - Data Link,Wireless,Medium
