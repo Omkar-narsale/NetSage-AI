@@ -55,7 +55,15 @@ NetSage AI focuses on eight core networking categories:
 * **Deterministic Status Output**: Every rule produces a structured `PASS`, `FAIL`, or `UNKNOWN` result with severity, evidence, and actionable recommendation. If evidence is incomplete or missing, rules return `UNKNOWN` without guessing or throwing exceptions.
 * **Non-AI Layer**: This layer operates 100% deterministically without LLM calls to provide fast, zero-cost, verifiable validation. In later phases, this rule checker works alongside the AI diagnosis engine to pre-filter basic configuration errors before AI inference.
 * **Unit Test Suite** (`tests/test_rules.py`): Comprehensive 22-test suite verifying `PASS`, `FAIL`, and `UNKNOWN` states across all rules.
-* **Execution Examples** (`examples/rule_checker_examples.md`): Detailed input/rule/result/explanation reference.
+### Phase 4 — AI Diagnosis Engine (Completed)
+* **Structured AI Diagnosis Engine** (`ai/diagnosis.py`): Modular LLM provider integration (`DiagnosisEngine`) executing evidence-grounded troubleshooting analysis against network symptoms, topology notes, Cisco CLI outputs, and Phase 3 rule checker results.
+* **Strict Output Schema Validation** (`ai/schemas.py`): Enforces validated JSON response format containing `root_cause`, bounded `confidence` (float between 0.0 and 1.0), `osi_layer`, grounded `evidence` quotes, `next_command` recommendations, and `fix_steps`.
+* **Evidence Grounding & Safety**: Models are strictly instructed to cite only supplied evidence without inventing command outputs, IP addresses, VLAN IDs, or topology details.
+* **Next-Command Recommendations**: When evidence is incomplete or ambiguous, the AI lowers its confidence score and recommends specific diagnostic CLI commands.
+* **Deterministic Rule Checker Integration**: Combines Phase 3 Python rule checker results (`PASS`, `FAIL`, `UNKNOWN`) into the AI prompt payload while preserving independent LLM analysis.
+* **Evaluation Framework** (`evaluation/evaluate_ai.py` & `data/ai_diagnoses.jsonl`): Evaluation harness measuring AI accuracy, average confidence, high-confidence error rates, and insufficient evidence flags against the 40 lab cases in `data/cases.csv`. Data leakage is strictly prevented by withholding `expected_fault` from prompt payloads during evaluation.
+* **Prompt Specification & Worked Examples**: Formatted prompt templates in `prompts/diagnose_prompt.md` and worked examples across VLAN, Routing, and ACL categories in `prompts/worked_examples.md`.
+* *Note: Human review is intentionally implemented in a later phase. The AI diagnosis engine generates remediation recommendations strictly for human review and does not automatically modify network configurations.*
 
 ---
 
@@ -64,7 +72,7 @@ NetSage AI focuses on eight core networking categories:
 * **Phase 1** — Networking foundation and initial cases (Completed)
 * **Phase 2** — Expand troubleshooting dataset (Completed)
 * **Phase 3** — Deterministic Python rule checker (Completed)
-* **Phase 4** — AI diagnosis engine
+* **Phase 4** — AI diagnosis engine (Completed)
 * **Phase 5** — AI + rule checker integration
 * **Phase 6** — Human review
 * **Phase 7** — Dashboard and evaluation
