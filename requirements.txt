@@ -1,3 +1,5 @@
 # NetSage AI Requirements
 # Core deterministic rule checker relies exclusively on Python Standard Library.
-# Python 3.8+ recommended (ipaddress, dataclasses, unittest built-in)
+# Phase 7 Dashboard uses Streamlit.
+
+streamlit>=1.25.0
