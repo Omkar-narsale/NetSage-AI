@@ -1,0 +1,73 @@
+case_id,symptom,topology_note,show_outputs,expected_fault,osi_layer,concept,severity
+CASE-001,PC-1 in Finance Dept cannot ping Server-1 on Switch-2. Local link is UP.,PC-1 (Fa0/5) -> Switch-1 (Fa0/24) -> Switch-2 (Fa0/10) -> Server-1. Target VLAN is 10.,"Switch-1# show vlan brief
+1 default active Fa0/3, Fa0/4, Fa0/5, Fa0/6
+10 Finance active Fa0/1, Fa0/2
+Switch-1# show interfaces fa0/5 switchport
+Access Mode VLAN: 1 (default)",Access port Fa0/5 on Switch-1 is incorrectly assigned to VLAN 1 instead of VLAN 10.,Layer 2 - Data Link,VLAN,Medium
+CASE-002,PC-A (VLAN 20) on Switch-1 cannot reach PC-B (VLAN 20) on Switch-2 across trunk link.,Switch-1 (Gi0/1) connected to Switch-2 (Gi0/1) via 802.1Q trunk.,"Switch-1# show interfaces trunk
+Port Mode Encapsulation Status Native vlan
+Gi0/1 on 802.1q trunking 1
+Port Vlans allowed on trunk
+Gi0/1 1-10
+Switch-1# show vlan brief
+20 Sales active Fa0/1",VLAN 20 is missing from the allowed VLAN list on inter-switch trunk interface Gig0/1.,Layer 2 - Data Link,VLAN,High
+CASE-003,Host PC-102 (192.168.1.15/24) can ping local LAN hosts but cannot reach remote server 10.0.0.50.,PC-102 (192.168.1.15/24) -> Switch-1 -> Router R1 (Gig0/0/0: 192.168.1.1/24).,"C:\> ipconfig /all
+IPv4 Address: 192.168.1.15
+Subnet Mask: 255.255.255.0
+Default Gateway: 192.168.1.254
+
+R1# show ip interface brief
+Interface IP-Address OK? Method Status Protocol
+GigabitEthernet0/0/0 192.168.1.1 YES manual up up",Host PC-102 has incorrect default gateway IP configured (192.168.1.254 instead of Router R1 IP 192.168.1.1).,Layer 3 - Network,Default Gateway,High
+CASE-004,Newly connected workstations in VLAN 30 receive APIPA IP address (169.254.x.x) and cannot access network.,Workstations in VLAN 30 (172.16.30.0/24) connect to Switch-1. Gateway is Router R1 sub-interface Gig0/0.30. DHCP Server is in VLAN 10 (172.16.10.100).,"R1# show running-config interface GigabitEthernet0/0.30
+interface GigabitEthernet0/0.30
+ encapsulation dot1Q 30
+ ip address 172.16.30.1 255.255.255.0
+!
+Workstation> ipconfig
+Autoconfiguration IPv4 Address: 169.254.112.45",DHCP Relay Agent (ip helper-address 172.16.10.100) is missing on Router sub-interface Gig0/0.30.,Layer 7 - Application,DHCP,High
+CASE-005,User can ping internal server IP 10.1.1.50, but browser fails to load http://app.corp.local with DNS timeout.,Client PC -> Switch -> Router -> Core Services (DNS Server IP: 10.1.1.53).,"C:\> ping 10.1.1.50
+Reply from 10.1.1.50: bytes=32 time=2ms TTL=128
+C:\> nslookup app.corp.local
+DNS request timed out.
+Default Server: UnKnown
+Address: 192.168.1.250
+C:\> ipconfig /all
+DNS Servers: 192.168.1.250",Client PC is configured with an invalid or non-existent DNS server IP (192.168.1.250 instead of 10.1.1.53).,Layer 7 - Application,DNS,Medium
+CASE-006,Branch Router R2 cannot reach HQ subnet 10.10.0.0/16. Traceroute drops at R2.,Branch R2 (192.168.20.0/24) connected to HQ R1 via Serial 0/1/0 (10.0.0.0/30). OSPF routing enabled.,"R2# show ip route
+Codes: C - connected, S - static, O - OSPF
+Gateway of last resort is not set
+C 192.168.20.0/24 is directly connected, GigabitEthernet0/0
+C 10.0.0.0/30 is directly connected, Serial0/1/0
+R2# show ip ospf neighbor
+(blank output)",OSPF neighbor adjacency between R1 and R2 is down due to missing network statement or area mismatch on R2.,Layer 3 - Network,Routing,High
+CASE-007,HR users in subnet 192.168.10.0/24 can ping Payroll Server 10.0.5.20, but HTTP web access (port 80) is denied.,HR Subnet (192.168.10.0/24) -> Router R1 (Gig0/0/1 outbound) -> Payroll Subnet (10.0.5.0/24).,"R1# show access-lists 101
+Extended IP access list 101
+ 10 deny tcp 192.168.10.0 0.0.0.255 host 10.0.5.20 eq www (156 matches)
+ 20 permit ip any any (450 matches)
+R1# show ip interface GigabitEthernet0/0/1
+ Outbound access list is 101",Outbound ACL 101 on interface Gig0/0/1 explicitly denies TCP port 80 (HTTP) traffic from HR subnet to Payroll server.,Layer 4 - Transport,ACL,Medium
+CASE-008,Internal host PC-1 (192.168.1.10) cannot access internet site 203.0.113.50. LAN gateway ping succeeds.,PC-1 (192.168.1.10) -> Router R1 (LAN Gig0/0/0, WAN Gig0/0/1) -> ISP (203.0.113.1). Dynamic NAT overload configured.,"R1# show ip nat translations
+(blank output)
+R1# show ip interface GigabitEthernet0/0/0
+ Interface GigabitEthernet0/0/0 is up, line protocol is up
+ Internet address is 192.168.1.1/24
+ Interface lacks ip nat inside directive
+R1# show ip interface GigabitEthernet0/0/1
+ ip nat outside is enabled",Router R1 LAN interface GigabitEthernet0/0/0 is missing the ip nat inside command, preventing NAT translation.,Layer 3 - Network,NAT,High
+CASE-009,Wireless laptops associate with SSID Guest-WiFi but cannot obtain IP address or access network resources.,Wireless Client -> Lightweight AP-1 -> Switch-1 (Fa0/12) -> Wireless Controller (WLC).,"WLC# show wlan 2
+WLAN Identifier: 2
+Network Name (SSID): Guest-WiFi
+Status: Enabled
+VLAN ID: 99
+
+Switch-1# show vlan brief
+VLAN Name Status Ports
+1 default active Fa0/1..Fa0/10
+10 Internal active Fa0/11
+(Note: VLAN 99 is missing from switch VLAN database)",WLAN 2 (Guest-WiFi) is mapped to VLAN 99, but VLAN 99 has not been created in the Layer 2 switch VLAN database.,Layer 2 - Data Link,Wireless,Medium
+CASE-010,Router R1 cannot forward traffic to external network 172.16.0.0/12. Packets drop with Destination net unreachable.,Router R1 -> Router R2 (10.0.0.2/30 connected on Gig0/0/1) -> External Enterprise Network.,"R1# show ip route
+Gateway of last resort is not set
+C 192.168.1.0/24 is directly connected, GigabitEthernet0/0/0
+C 10.0.0.0/30 is directly connected, GigabitEthernet0/0/1
+S 172.16.0.0/12 [1/0] via 10.0.0.5 [unreachable]",Static route for 172.16.0.0/12 points to an invalid/unreachable next-hop IP address (10.0.0.5 instead of connected next-hop 10.0.0.2).,Layer 3 - Network,Routing,High
