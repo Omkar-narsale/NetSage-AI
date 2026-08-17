@@ -75,8 +75,20 @@ NetSage AI focuses on eight core networking categories:
   Evidence ➔ Rule Checker ➔ Rule Results ➔ Groq AI ➔ AI Diagnosis ➔ Evidence Fusion ➔ Agreement / Conflict ➔ Human Review
   ```
 * **Evaluation Framework** (`evaluation/evaluate_integration.py` & `data/integrated_results.jsonl`): Evaluates full integrated pipeline against 40 lab cases, tracking agreement counts, accuracy %, and high-confidence conflicts (AI confidence >= 0.80 with status `CONFLICT`). Data leakage is strictly prevented by withholding `expected_fault` from AI prompt payloads.
-* **Unit Test Suite** (`tests/test_integration.py`): 6 comprehensive unit tests verifying all agreement categories (`AGREE`, `PARTIAL_AGREE`, `CONFLICT`, `INSUFFICIENT_EVIDENCE`) and pipeline flow.
-* *Note: Human review is intentionally implemented in Phase 6. The integration pipeline does not automatically apply network configuration changes or execute Cisco CLI commands.*
+### Phase 6 — Human Review & Responsible AI Logging (Completed)
+* **Human Review Workflow Engine** (`review/review_manager.py` & `review/review_models.py`): Workflow manager enforcing that the human reviewer is the final authority. Every AI diagnosis must pass through human review (`PENDING` ➔ `ACCEPTED`, `EDITED`, or `REJECTED`).
+* **Three Reviewer Decisions**:
+  1. `ACCEPT`: Preserves AI diagnosis as final approved diagnosis.
+  2. `EDIT`: Allows human reviewer to edit root cause, OSI layer, evidence, next commands, or fix steps. Requires mandatory `correction_reason`.
+  3. `REJECT`: Rejects fundamentally incorrect AI output and records human ground-truth diagnosis. Requires mandatory `correction_reason`.
+* **Original Output Preservation**: `ai_diagnosis` is NEVER overwritten or mutated. Both `ai_diagnosis` and `final_diagnosis` are stored in `data/review_records.jsonl` to measure model accuracy and human correction rates.
+* **Responsible AI Audit Log** (`data/responsible_ai_log.csv`): Audit logger recording genuine cases where AI diagnosis was edited or rejected by a human reviewer. Logs 6 genuine human corrections (`CASE-006`, `CASE-010`, `CASE-016`, `CASE-020`, `CASE-027`, `CASE-033`).
+* **End-to-End Governance Architecture**:
+  ```
+  AI ➔ Rule Checker + Evidence Fusion ➔ Human Review (Accept / Edit / Reject) ➔ Final Diagnosis ➔ Responsible AI Log
+  ```
+* **Unit Test Suite** (`tests/test_review.py`): 8 unit tests verifying decision validation, original AI output preservation, correction reason enforcement, and audit log isolation.
+* *Note: The system does not automatically apply network fixes. Remediation steps are strictly presented for human review and approval.*
 
 ---
 
@@ -87,6 +99,6 @@ NetSage AI focuses on eight core networking categories:
 * **Phase 3** — Deterministic Python rule checker (Completed)
 * **Phase 4** — AI diagnosis engine (Completed)
 * **Phase 5** — AI + rule checker integration (Completed)
-* **Phase 6** — Human review
+* **Phase 6** — Human review & responsible AI logging (Completed)
 * **Phase 7** — Dashboard and evaluation
 * **Phase 8** — Final Packet Tracer demo
