@@ -62,8 +62,21 @@ NetSage AI focuses on eight core networking categories:
 * **Next-Command Recommendations**: When evidence is incomplete or ambiguous, the AI lowers its confidence score and recommends specific diagnostic CLI commands.
 * **Deterministic Rule Checker Integration**: Combines Phase 3 Python rule checker results (`PASS`, `FAIL`, `UNKNOWN`) into the AI prompt payload while preserving independent LLM analysis.
 * **Evaluation Framework** (`evaluation/evaluate_ai.py` & `data/ai_diagnoses.jsonl`): Evaluation harness measuring AI accuracy, average confidence, high-confidence error rates, and insufficient evidence flags against the 40 lab cases in `data/cases.csv`. Data leakage is strictly prevented by withholding `expected_fault` from prompt payloads during evaluation.
-* **Prompt Specification & Worked Examples**: Formatted prompt templates in `prompts/diagnose_prompt.md` and worked examples across VLAN, Routing, and ACL categories in `prompts/worked_examples.md`.
-* *Note: Human review is intentionally implemented in a later phase. The AI diagnosis engine generates remediation recommendations strictly for human review and does not automatically modify network configurations.*
+### Phase 5 — Deterministic Rule Checker + Groq AI Integration (Completed)
+* **Integration Pipeline** (`integration/diagnosis_pipeline.py`): End-to-end diagnosis pipeline (`DiagnosisPipeline`) combining Phase 3 deterministic rule results with Phase 4 Groq AI diagnosis.
+* **Evidence Fusion Module** (`integration/evidence_fusion.py`): `EvidenceFusion` module evaluating agreement between rule checker findings and LLM root cause analysis.
+* **Four Deterministic Agreement Categories**:
+  1. `AGREE`: AI diagnosis aligns with failing deterministic rules without contradiction.
+  2. `PARTIAL_AGREE`: AI and rule checker point to same fault category, or rules pass while AI diagnoses CLI evidence with high confidence.
+  3. `CONFLICT`: Deterministic rules strongly indicate one fault (e.g. `IF-001` interface down) while AI identifies a different root cause (e.g. DNS failure). Flags `conflict_detected=True` and generates mandatory review warning.
+  4. `INSUFFICIENT_EVIDENCE`: Neither deterministic rules nor AI model has sufficient evidence to establish a reliable diagnosis.
+* **End-to-End Pipeline Architecture**:
+  ```
+  Evidence ➔ Rule Checker ➔ Rule Results ➔ Groq AI ➔ AI Diagnosis ➔ Evidence Fusion ➔ Agreement / Conflict ➔ Human Review
+  ```
+* **Evaluation Framework** (`evaluation/evaluate_integration.py` & `data/integrated_results.jsonl`): Evaluates full integrated pipeline against 40 lab cases, tracking agreement counts, accuracy %, and high-confidence conflicts (AI confidence >= 0.80 with status `CONFLICT`). Data leakage is strictly prevented by withholding `expected_fault` from AI prompt payloads.
+* **Unit Test Suite** (`tests/test_integration.py`): 6 comprehensive unit tests verifying all agreement categories (`AGREE`, `PARTIAL_AGREE`, `CONFLICT`, `INSUFFICIENT_EVIDENCE`) and pipeline flow.
+* *Note: Human review is intentionally implemented in Phase 6. The integration pipeline does not automatically apply network configuration changes or execute Cisco CLI commands.*
 
 ---
 
@@ -73,7 +86,7 @@ NetSage AI focuses on eight core networking categories:
 * **Phase 2** — Expand troubleshooting dataset (Completed)
 * **Phase 3** — Deterministic Python rule checker (Completed)
 * **Phase 4** — AI diagnosis engine (Completed)
-* **Phase 5** — AI + rule checker integration
+* **Phase 5** — AI + rule checker integration (Completed)
 * **Phase 6** — Human review
 * **Phase 7** — Dashboard and evaluation
 * **Phase 8** — Final Packet Tracer demo
