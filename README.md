@@ -43,7 +43,19 @@ NetSage AI focuses on eight core networking categories:
 * **8 Networking Concepts**: Complete coverage across VLAN, Default Gateway, DHCP, DNS, Routing, ACL, NAT, and Wireless.
 * **Cisco-style Evidence**: Detailed `show` command outputs supporting expected faults.
 * **Metadata Tagging**: Explicit OSI layer, concept tag, topology notes, and severity labels (High, Medium, Low).
-* **Dataset Quality Report** (`docs/dataset-quality-report.md`): Statistical summary, coverage mapping, evidence quality standards, and duplicate checks.
+### Phase 3 — Deterministic Rule Checker (Completed)
+* **Deterministic Rule Engine** (`rules/checker.py`): Central rule orchestration engine (`RuleChecker`) executing non-probabilistic Python rule checks against structured evidence payloads.
+* **Six Core Rules**:
+  1. `IF-001` — **Interface Down Check**: Detects `administratively down` and down line protocol interface states.
+  2. `IP-001` — **Duplicate IP Check**: Detects duplicate IP address allocations across network devices.
+  3. `IP-002` — **Subnet Alignment Check**: Validates host IP address and mask against expected subnet boundaries.
+  4. `GW-001` — **Default Gateway Mismatch Check**: Validates default gateway IP alignment with host subnet and router IP.
+  5. `VLAN-001` — **Missing VLAN Check**: Verifies required VLAN presence in switch VLAN database.
+  6. `ROUTE-001` — **Missing Route Check**: Verifies active routing table entries for target destination subnets.
+* **Deterministic Status Output**: Every rule produces a structured `PASS`, `FAIL`, or `UNKNOWN` result with severity, evidence, and actionable recommendation. If evidence is incomplete or missing, rules return `UNKNOWN` without guessing or throwing exceptions.
+* **Non-AI Layer**: This layer operates 100% deterministically without LLM calls to provide fast, zero-cost, verifiable validation. In later phases, this rule checker works alongside the AI diagnosis engine to pre-filter basic configuration errors before AI inference.
+* **Unit Test Suite** (`tests/test_rules.py`): Comprehensive 22-test suite verifying `PASS`, `FAIL`, and `UNKNOWN` states across all rules.
+* **Execution Examples** (`examples/rule_checker_examples.md`): Detailed input/rule/result/explanation reference.
 
 ---
 
@@ -51,7 +63,7 @@ NetSage AI focuses on eight core networking categories:
 
 * **Phase 1** — Networking foundation and initial cases (Completed)
 * **Phase 2** — Expand troubleshooting dataset (Completed)
-* **Phase 3** — Deterministic Python rule checker
+* **Phase 3** — Deterministic Python rule checker (Completed)
 * **Phase 4** — AI diagnosis engine
 * **Phase 5** — AI + rule checker integration
 * **Phase 6** — Human review
